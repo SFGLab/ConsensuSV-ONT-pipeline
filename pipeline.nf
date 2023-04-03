@@ -13,47 +13,80 @@ params.mem = 4
 
 workflow {
     files = Channel.fromPath(params.design).splitCsv()
-    BAMFILE(files)
-    INDEX(BAMFILE.out.bam)
-	Sniffles(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
-	CuteSV(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
-	Svim(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
-	Dysgu(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
-	//Nanovar(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
-	NanoSV(BAMFILE.out.bam, BAMFILE.out.sample, INDEX.out)
+    ALIGN_PB(files)
+	ALIGN_ONT(files)
+	Sniffles(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	CuteSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	Svim(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	Dysgu(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	Nanovar(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	NanoSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 }
 
-process BAMFILE {
-    tag "Create symlink to bam files"
- 
+process ALIGN_PB {
+	tag "Create align for Pac Bio Callers"
+	
+	publishDir "${params.outdir}/aligment/${sample}"
+	
+	input:
+	path fastq
+	
+	output:
+	path '${params.outdir}/aligment/${sample}/output_pb.bam', emit: bam
+	path '${params.outdir}/aligment/${sample}/output_pb.bam.bai', emit: index
+	
+	val fastq.simpleName, emit: sample
+	
+	script:
+	"""
+	pbmm2 align ${params.ref} $fastq output_pb.bam --sort --preset CCS --sample sample1 --rg '@RG\tID:movie1'
+	samtools index output_pb.bam
+	"""
+}
+
+process ALIGN_ONT {
+	tag "Create align for Oxord Nanopore Technology Callers"
+	
+	publishDir "${params.outdir}/aligment/${sample}"
+	
+	input:
+	path fastq
+	
+	output:
+	path '${params.outdir}/aligment/${sample}/output_ont.bam', emit: bam
+	path '${params.outdir}/aligment/${sample}/output_ont.bam.bai', emit: index
+	val fastq.simpleName, emit: sample
+	
+	script:
+	"""
+	minimap2 -t 8 -ax map-ont --MD ${params.ref} $fastq > file.sam
+	samtools view -S -b file.sam > file.bam
+	samtools sort file.bam -o file.sorted.bam
+	samtools view -b -F 4 file.sorted.bam > output_ont.bam
+	samtools index output_ont.bam
+	"""
+}
+
+process PBSV {
+	tag "Calling PBSV"
+
+    publishDir "${params.outdir}/vcfs/${sample}"
+
     input:
     path bam
+    val sample
+    path bai
  
     output:
-    path 'output.bam', emit: bam
-    val bam.simpleName, emit:sample
- 
+    path "pbsv.vcf"
+
     script:
     """
-	ln -s $bam output.bam
+	pbsv discover $bam pbsv.svsig.gz
+	tabix -c '#' -s 3 -b 4 -e 4 pbsv.svsig.gz
+	pbsv call ${params.ref} pbsv.svsig.gz pbsv.vcf
     """
 }
- 
-
-process INDEX {
-    tag "Indexing files"
- 
-    input:
-    path bam
- 
-    output:
-    path "${bam}.bai"
- 
-    script:
-    """
-    samtools index $bam
-    """
-} 
 
 process Sniffles {
     tag "Calling Sniffles"
@@ -71,7 +104,6 @@ process Sniffles {
     script:
     """
     sniffles -t ${params.threads} -i $bam -v sniffles.vcf --minsvlen 50
-	
     """
 }
 
@@ -168,7 +200,7 @@ process NanoSV {
 
     script:
     """
-	NanoSV -t ${params.threads} -s /tools/samtools-1.12/samtools -c /tools/config.ini -b /tools/random_positions_chrxy.bed $bam -o nanoSV.vcf
+	NanoSV -t ${params.threads} -s /tools/samtools-1.12/samtools -c /tools/ConsensusSV-ONT-pipeline/config.ini -b /tools/ConsensusSV-ONT-pipeline/random_positions_chrxy.bed $bam -o nanoSV.vcf
 	"""
 }
 
