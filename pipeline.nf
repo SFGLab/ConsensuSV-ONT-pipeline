@@ -40,7 +40,6 @@ process ALIGN_PB {
 	script:
 	"""
 	pbmm2 align ${params.ref} $fastq output_pb.bam --sort --preset CCS --sample sample1 --rg '@RG\tID:movie1'
-	samtools index output_pb.bam
 	"""
 }
 
