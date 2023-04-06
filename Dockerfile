@@ -118,5 +118,12 @@ RUN pip install nanosv
 RUN curl -s https://get.nextflow.io | bash && \
 mv nextflow /bin
 
+RUN conda install -y -c bioconda pbmm2
+RUN conda install -y -c bioconda pbsv
+RUN apt install tabix
+
+RUN cd /tools && \
+	git clone https://github.com/SFGLab/ConsensusSV-ONT-pipeline.git
+
 WORKDIR /tools
 

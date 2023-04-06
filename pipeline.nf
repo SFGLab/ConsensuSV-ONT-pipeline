@@ -13,7 +13,7 @@ params.mem = 4
 
 workflow {
     files = Channel.fromPath(params.design).splitCsv()
-    ALIGN_PB(files)
+    //ALIGN_PB(files)
 	ALIGN_ONT(files)
 	Sniffles(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	CuteSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
@@ -21,6 +21,7 @@ workflow {
 	Dysgu(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Nanovar(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	NanoSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	//PBSV(ALIGN_PB.out.bam, ALIGN_PB.out.sample, ALIGN_PB.out.index)
 }
 
 process ALIGN_PB {
@@ -58,11 +59,11 @@ process ALIGN_ONT {
 	
 	script:
 	"""
-	minimap2 -t 8 -ax map-ont --MD ${params.ref} $fastq > file.sam
-	samtools view -S -b file.sam > file.bam
-	samtools sort file.bam -o file.sorted.bam
-	samtools view -b -F 4 file.sorted.bam > output_ont.bam
-	samtools index output_ont.bam
+	minimap2 -t ${params.threads} -ax map-ont --MD ${params.ref} $fastq > file.sam
+	samtools view -@ ${params.threads} -S -b file.sam > file.bam
+	samtools sort -@ ${params.threads} file.bam -o file.sorted.bam
+	samtools view -@ ${params.threads} -b -F 4 file.sorted.bam > output_ont.bam
+	samtools index -@ ${params.threads} output_ont.bam
 	"""
 }
 
