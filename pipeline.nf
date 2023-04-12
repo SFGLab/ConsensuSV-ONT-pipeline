@@ -85,7 +85,7 @@ process PBSV {
     """
 	pbsv discover $bam pbsv.svsig.gz
 	tabix -c '#' -s 3 -b 4 -e 4 pbsv.svsig.gz
-	pbsv call ${params.ref} pbsv.svsig.gz pbsv.vcf
+	pbsv call -j ${params.threads} ${params.ref} pbsv.svsig.gz pbsv.vcf
     """
 }
 
