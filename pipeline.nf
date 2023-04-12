@@ -34,8 +34,8 @@ process ALIGN_PB {
 	path fastq
 	
 	output:
-	path '${params.outdir}/aligment/${sample}/output_pb.bam', emit: bam
-	path '${params.outdir}/aligment/${sample}/output_pb.bam.bai', emit: index
+	path 'output_pb.bam', emit: bam
+	path 'output_pb.bam.bai', emit: index
 	val fastq.simpleName, emit: sample
 	
 	script:
@@ -53,8 +53,8 @@ process ALIGN_ONT {
 	path fastq
 	
 	output:
-	path '${params.outdir}/aligment/${sample}/output_ont.bam', emit: bam
-	path '${params.outdir}/aligment/${sample}/output_ont.bam.bai', emit: index
+	path 'output_ont.bam', emit: bam
+	path 'output_ont.bam.bai', emit: index
 	val fastq.simpleName, emit: sample
 	
 	script:
