@@ -5,23 +5,26 @@
  * and fastq files and can be provided as command line options
  */
 
+params.input = "files.csv"	
+params.outdir = "/tools/results"
 params.ref = "/tools/GRCh38_full_analysis_set_plus_decoy_hla.fa"
-params.outdir = "results"
-params.design = "/tools/files.csv"	
-params.threads = 4
-params.mem = 4
+params.threads = 50
+params.mem = 500
 
 workflow {
-    files = Channel.fromPath(params.design).splitCsv()
+    	files = Channel.fromPath(params.input).splitCsv()
+
 	ALIGN_PB(files)
 	ALIGN_ONT(files)
+	
+	PBSV(ALIGN_PB.out.bam, ALIGN_PB.out.sample, ALIGN_PB.out.index)
 	Sniffles(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	CuteSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Svim(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Dysgu(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Nanovar(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
-	//NanoSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index) execution time too long
-	PBSV(ALIGN_PB.out.bam, ALIGN_PB.out.sample, ALIGN_PB.out.index)
+	NanoSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
+	
 }
 
 process ALIGN_PB {
