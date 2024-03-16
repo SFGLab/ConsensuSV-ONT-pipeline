@@ -24,8 +24,7 @@ workflow {
 	Dysgu(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Nanovar(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	
-	ConsensuSV_ONT(ALIGN_ONT.out.sample, PBSV.out.vcf, Sniffles.out.vcf, CuteSV.out.vcf, Svim.out.vcf, Dysgu.out.vcf, Nanovar.out.vcf, "")
-	ConsensuSV_ONT(ALIGN_ONT.out.sample, PBSV.out.vcf_filtered, Sniffles.out.vcf_filtered, CuteSV.out.vcf_filtered, Svim.out.vcf_filtered, Dysgu.out.vcf_filtered, Nanovar.out.vcf_filtered, "_filtered")
+	ConsensuSV_ONT(ALIGN_ONT.out.sample, PBSV.out.vcf_filtered, Sniffles.out.vcf_filtered, CuteSV.out.vcf_filtered, Svim.out.vcf_filtered, Dysgu.out.vcf_filtered, Nanovar.out.vcf_filtered, ALIGN_ONT.out.bam, ALIGN_ONT.out.index)
 
 }
 
@@ -154,7 +153,7 @@ process Svim {
 	script:
 	"""
 	svim alignment . $bam ${params.ref}
-	mv variants.vcf svim.vcf
+	bcftools sort variants.vcf > svim.vcf
 	bcftools view -i 'QUAL>=10' svim.vcf > svim_filtered.vcf
 	"""
 }
@@ -215,32 +214,51 @@ process ConsensuSV_ONT {
 	path svim_vcf
 	path dysgu_vcf
 	path nanovar_vcf
-	val name
+	path bam
+	path index
+	
+	output:
+	path 'consensuSV-ONT_DEL.vcf'
+	path 'consensuSV-ONT_INS.vcf'
 
 	script:
 	"""
-	for file in pbsv_vcf sniffles_vcf cutesv_vcf svim_vcf dysgu_vcf nanovar_vcf; do
-	  	bgzip -c  $file > $file.gz
-	    	tabix -p vcf $file.gz
-	done 
+        bgzip -c  $nanovar_vcf > ${nanovar_vcf}.gz
+        tabix -p vcf ${nanovar_vcf}.gz
 
-	bcftools merge -m none $pbsv_vcf $sniffles_vcf $cutesv_vcf $svim_vcf $dysgu_vcf $nanovar_vcf --force-samples > {$sample}{$name}_merged.vcf
-	bgzip -c  {$sample}{$name}_merged.vcf > {$sample}{$name}_merged.vcf.gz
-	tabix -p vcf {$sample}{$name}_merged.vcf.gz
-
-	bcftools view -i 'INFO/SVTYPE="DEL"' {$sample}{$name}_merged.vcf > {$sample}{$name}_merged_DEL.vcf
-	bcftools view -i 'INFO/SVTYPE="INS" | INFO/SVTYPE="DUP"' {$sample}{$name}_merged.vcf > {$sample}{$name}_merged_INS.vcf
-
-	bgzip -c  {$sample}{$name}_merged_DEL.vcf > {$sample}{$name}_merged_DEL.vcf.gz
-	tabix -p vcf {$sample}{$name}_merged_DEL.vcf.gz
-	bgzip -c  {$sample}{$name}_merged_DEL.vcf > {$sample}{$name}_merged_DEL.vcf.gz
-	tabix -p vcf {$sample}{$name}_merged_DEL.vcf.gz
+	bgzip -c  $dysgu_vcf > ${dysgu_vcf}.gz
+	tabix -p vcf ${dysgu_vcf}.gz
 	
-	truvari collapse -p=0 -i {$sample}{$name}_merged_DEL.vcf.gz -o {$sample}{$name}_truvari_merged_DEL.vcf -c {$sample}{$name}_truvari_collapsed_DEL.vcf
-	truvari collapse -p=0 -i {$sample}{$name}_merged_INS.vcf.gz -o {$sample}{$name}_truvari_merged_INS.vcf -c {$sample}{$name}_truvari_collapsed_INS.vcf
+	bgzip -c  $svim_vcf > ${svim_vcf}.gz
+	tabix -p vcf ${svim_vcf}.gz
 
-	// image encoding
-	// HQ variants predicting
-	// HQ variants returning as a vcf file
+	bgzip -c  $cutesv_vcf > ${cutesv_vcf}.gz
+	tabix -p vcf ${cutesv_vcf}.gz
+
+	bgzip -c  $sniffles_vcf > ${sniffles_vcf}.gz
+	tabix -p vcf ${sniffles_vcf}.gz
+	
+	bgzip -c  $pbsv_vcf > ${pbsv_vcf}.gz
+	tabix -p vcf ${pbsv_vcf}.gz
+	
+	bcftools merge -m none ${nanovar_vcf}.gz  ${pbsv_vcf}.gz ${sniffles_vcf}.gz ${cutesv_vcf}.gz ${svim_vcf}.gz ${dysgu_vcf}.gz --force-samples > ${sample}_merged.vcf
+	
+	bgzip -c  ${sample}_merged.vcf > ${sample}_merged.vcf.gz
+	tabix -p vcf ${sample}_merged.vcf.gz
+
+	bcftools view -i 'INFO/SVTYPE="DEL"' ${sample}_merged.vcf > ${sample}_merged_DEL.vcf
+	bcftools view -i 'INFO/SVTYPE="INS" | INFO/SVTYPE="DUP"' ${sample}_merged.vcf >${sample}_merged_INS.vcf
+	
+	bgzip -c  ${sample}_merged_DEL.vcf > ${sample}_merged_DEL.vcf.gz
+	tabix -p vcf ${sample}_merged_DEL.vcf.gz
+	bgzip -c  ${sample}_merged_INS.vcf > ${sample}_merged_INS.vcf.gz
+	tabix -p vcf ${sample}_merged_INS.vcf.gz
+	
+	truvari collapse -p=0 -i ${sample}_merged_DEL.vcf.gz -o ${sample}_truvari_merged_DEL.vcf -c ${sample}_truvari_collapsed_DEL.vcf
+	truvari collapse -p=0 -i ${sample}_merged_INS.vcf.gz -o ${sample}_truvari_merged_INS.vcf -c ${sample}_truvari_collapsed_INS.vcf
+	python /tools/ConsensusSV-ONT-pipeline/consensusv_ont.py -i ${sample}_truvari_merged_DEL.vcf -b $bam -t DEL -s $sample -o consensuSV-ONT_DEL.vcf
+	python /tools/ConsensusSV-ONT-pipeline/consensusv_ont.py -i ${sample}_truvari_merged_INS.vcf -b $bam -t INS -s $sample -o consensuSV-ONT_INS.vcf
+	
 	"""
 }
+
