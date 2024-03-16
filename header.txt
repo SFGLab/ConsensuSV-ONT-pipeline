@@ -1,0 +1,43 @@
+##fileformat=VCFv4.2
+##ALT=<ID=CNV,Description="Copy number variable region">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion of novel sequence">
+##ALT=<ID=INV,Description="Inversion">
+##FILTER=<ID=LQ,Description="Low Quality Genotyping filter">
+##FILTER=<ID=LowQual,Description="Low Quality">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of the variant">
+##INFO=<ID=SVTYPE,Number=.,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVTYPE,Number=.,Type=String,Description="Type of structural variant">
+##INFO=<ID=SCORE,Number=.,Type=String,Description="ConsensuSV-ONT variant probability score">
+##contig=<ID=chr1,len=248956422>
+##contig=<ID=chr2,len=242193529>
+##contig=<ID=chr3,len=198295559>
+##contig=<ID=chr4,len=190214555>
+##contig=<ID=chr5,len=181538259>
+##contig=<ID=chr6,len=170805979>
+##contig=<ID=chr7,len=159345973>
+##contig=<ID=chr8,len=145138636>
+##contig=<ID=chr9,len=138394717>
+##contig=<ID=chr10,len=133797422>
+##contig=<ID=chr11,len=135086622>
+##contig=<ID=chr12,len=133275309>
+##contig=<ID=chr13,len=114364328>
+##contig=<ID=chr14,len=107043718>
+##contig=<ID=chr15,len=101991189>
+##contig=<ID=chr16,len=90338345>
+##contig=<ID=chr17,len=83257441>
+##contig=<ID=chr18,len=80373285>
+##contig=<ID=chr19,len=58617616>
+##contig=<ID=chr20,len=64444167>
+##contig=<ID=chr21,len=46709983>
+##contig=<ID=chr22,len=50818468>
+##contig=<ID=chrM,len=16569>
+##contig=<ID=chrX,len=156040895>
+##contig=<ID=chrY,len=57227415>
+##fileDate=11042020
+##reference=GRCh38_full_analysis_set_plus_decoy_hla
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLENAME
