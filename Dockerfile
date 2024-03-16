@@ -78,6 +78,7 @@ RUN conda init bash
 RUN conda create --name workspace python=3.8
 
 RUN pip install pysam 
+RUN pip install truvari
 
 # bedtools2
 RUN apt-get install bedtools
