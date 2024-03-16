@@ -5,8 +5,8 @@
  * and fastq files and can be provided as command line options
  */
 
-params.input = "files.csv"	
-params.outdir = "/tools/results"
+params.input = "input.csv"	
+params.outdir = "results"
 params.ref = "/tools/GRCh38_full_analysis_set_plus_decoy_hla.fa"
 params.threads = 50
 params.mem = 500
@@ -23,14 +23,16 @@ workflow {
 	Svim(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Dysgu(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	Nanovar(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
-	NanoSV(ALIGN_ONT.out.bam, ALIGN_ONT.out.sample, ALIGN_ONT.out.index)
 	
+	ConsensuSV_ONT(ALIGN_ONT.out.sample, PBSV.out.vcf, Sniffles.out.vcf, CuteSV.out.vcf, Svim.out.vcf, Dysgu.out.vcf, Nanovar.out.vcf, "")
+	ConsensuSV_ONT(ALIGN_ONT.out.sample, PBSV.out.vcf_filtered, Sniffles.out.vcf_filtered, CuteSV.out.vcf_filtered, Svim.out.vcf_filtered, Dysgu.out.vcf_filtered, Nanovar.out.vcf_filtered, "_filtered")
+
 }
 
 process ALIGN_PB {
 	tag "Create align for Pac Bio Callers"
 
-	publishDir "${params.outdir}/aligment/${fastq.simpleName}", mode: "copy"
+	publishDir "${params.outdir}/aligment/${fastq.simpleName}"
 	
 	input:
 	path fastq
@@ -49,7 +51,7 @@ process ALIGN_PB {
 process ALIGN_ONT {
 	tag "Create align for Oxord Nanopore Technology Callers"
 	
-	publishDir "${params.outdir}/aligment/${fastq.simpleName}", mode: "copy"
+	publishDir "${params.outdir}/aligment/${fastq.simpleName}"
 	
 	input:
 	path fastq
@@ -73,7 +75,7 @@ process ALIGN_ONT {
 process PBSV {
 	tag "Calling PBSV"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -81,20 +83,22 @@ process PBSV {
 	path bai
  
 	output:
-	path "pbsv.vcf"
+	path "pbsv.vcf", emit: vcf
+	path "pbsv_filtered.vcf", emit: vcf_filtered
 
 	script:
 	"""
 	pbsv discover $bam pbsv.svsig.gz
 	tabix -c '#' -s 3 -b 4 -e 4 pbsv.svsig.gz
 	pbsv call -j ${params.threads} ${params.ref} pbsv.svsig.gz pbsv.vcf
+	bcftools view -i 'INFO/IMPRECISE=0' pbsv.vcf > pbsv_filtered.vcf
 	"""
 }
 
 process Sniffles {
 	tag "Calling Sniffles"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -102,18 +106,20 @@ process Sniffles {
 	path bai
  
 	output:
-	path "sniffles.vcf"
+	path "sniffles.vcf", emit: vcf
+	path "sniffles_filtered.vcf", emit: vcf_filtered
 
 	script:
 	"""
 	sniffles -t ${params.threads} -i $bam -v sniffles.vcf --minsvlen 50
+	bcftools view -i 'INFO/IMPRECISE=0' sniffles.vcf > sniffles_filtered.vcf
 	"""
 }
 
 process CuteSV {
 	tag "Calling CuteSV"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -121,18 +127,20 @@ process CuteSV {
 	path bai
 	
 	output:
-	path "cuteSV.vcf"
+	path "cuteSV.vcf", emit: vcf
+	path "cuteSV_filtered.vcf", emit: vcf_filtered
 
 	script:
 	"""
 	cuteSV -t ${params.threads} -l 50 -s 5 $bam ${params.ref} cuteSV.vcf .	
+	bcftools view -i 'INFO/RE>10' cuteSV.vcf > cuteSV_filtered.vcf
 	"""
 }
 
 process Svim {
 	tag "Calling Svim"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -140,20 +148,21 @@ process Svim {
 	path bai
  
 	output:
-	path "svim.vcf"
+	path "svim.vcf", emit: vcf
+	path "svim_filtered.vcf", emit: vcf_filtered
 
 	script:
 	"""
 	svim alignment . $bam ${params.ref}
-	bcftools view -i 'QUAL >= 10' variants.vcf
 	mv variants.vcf svim.vcf
+	bcftools view -i 'QUAL>=10' svim.vcf > svim_filtered.vcf
 	"""
 }
 
 process Dysgu {
 	tag "Calling Dysgu"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -161,18 +170,20 @@ process Dysgu {
 	path bai
  
 	output:
-	path "dysgu.vcf"
+	path "dysgu.vcf", emit: vcf
+	path "dysgu_filtered.vcf", emit: vcf_filtered
 	
 	script:
 	"""
 	dysgu call --mode nanopore ${params.ref} temp $bam > dysgu.vcf	
+	bcftools view -i 'FORMAT/PROB>0.5' dysgu.vcf > dysgu_filtered.vcf
 	"""
 }
 
 process Nanovar {
 	tag "Calling Nanovar"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
 	path bam
@@ -180,31 +191,56 @@ process Nanovar {
 	path bai
  
 	output:
-	path "nanovar.vcf"
+	path "nanovar.vcf", emit: vcf
+	path "nanovar_filtered.vcf", emit: vcf_filtered
 
 	script:
 	"""
 	nanovar -t ${params.threads} -x ont $bam -l 50 ${params.ref} . --mdb /tools/ncbi-blast-2.3.0+/bin/makeblastdb --wmk /tools//ncbi-blast-2.3.0+/bin/windowmasker --hsb /tools/queries/hs-blastn-src/v0.0.5/hs-blastn
 	mv output_ont.nanovar.pass.vcf nanovar.vcf
+	bcftools view -i 'INFO/NN>0.5 & INFO/SVLEN!="."' nanovar.vcf > nanovar_filtered.vcf
 	"""
 }
 
-process NanoSV {
-	tag "Calling NanoSV"
+process ConsensuSV_ONT {
+	tag "Truvari variants merging and collapsing"
 
-	publishDir "${params.outdir}/vcfs/${sample}", mode: "copy"
+	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
-	path bam
 	val sample
-	path bai
-	
-	output:
-	path "nanoSV.vcf"
+	path pbsv_vcf
+	path sniffles_vcf
+	path cutesv_vcf
+	path svim_vcf
+	path dysgu_vcf
+	path nanovar_vcf
+	val name
 
 	script:
 	"""
-	NanoSV -t ${params.threads} -s /tools/samtools-1.12/samtools -c /tools/ConsensusSV-ONT-pipeline/config.ini -b /tools/ConsensusSV-ONT-pipeline/random_positions_chrxy.bed $bam -o nanoSV.vcf
+	for file in pbsv_vcf sniffles_vcf cutesv_vcf svim_vcf dysgu_vcf nanovar_vcf; do
+	  	bgzip -c  $file > $file.gz
+	    	tabix -p vcf $file.gz
+	done 
+
+	bcftools merge -m none $pbsv_vcf $sniffles_vcf $cutesv_vcf $svim_vcf $dysgu_vcf $nanovar_vcf --force-samples > {$sample}{$name}_merged.vcf
+	bgzip -c  {$sample}{$name}_merged.vcf > {$sample}{$name}_merged.vcf.gz
+	tabix -p vcf {$sample}{$name}_merged.vcf.gz
+
+	bcftools view -i 'INFO/SVTYPE="DEL"' {$sample}{$name}_merged.vcf > {$sample}{$name}_merged_DEL.vcf
+	bcftools view -i 'INFO/SVTYPE="INS" | INFO/SVTYPE="DUP"' {$sample}{$name}_merged.vcf > {$sample}{$name}_merged_INS.vcf
+
+	bgzip -c  {$sample}{$name}_merged_DEL.vcf > {$sample}{$name}_merged_DEL.vcf.gz
+	tabix -p vcf {$sample}{$name}_merged_DEL.vcf.gz
+	bgzip -c  {$sample}{$name}_merged_DEL.vcf > {$sample}{$name}_merged_DEL.vcf.gz
+	tabix -p vcf {$sample}{$name}_merged_DEL.vcf.gz
+	
+	truvari collapse -p=0 -i {$sample}{$name}_merged_DEL.vcf.gz -o {$sample}{$name}_truvari_merged_DEL.vcf -c {$sample}{$name}_truvari_collapsed_DEL.vcf
+	truvari collapse -p=0 -i {$sample}{$name}_merged_INS.vcf.gz -o {$sample}{$name}_truvari_merged_INS.vcf -c {$sample}{$name}_truvari_collapsed_INS.vcf
+
+	// image encoding
+	// HQ variants predicting
+	// HQ variants returning as a vcf file
 	"""
 }
-
