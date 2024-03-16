@@ -79,6 +79,9 @@ RUN conda create --name workspace python=3.8
 
 RUN pip install pysam 
 RUN pip install truvari
+RUN pip install PyVCF
+RUN pip install opencv-python
+RUN pip install tensorflow
 
 # bedtools2
 RUN apt-get install bedtools
@@ -119,7 +122,7 @@ mv nextflow /bin
 RUN conda install -y -c bioconda pbmm2
 RUN conda install -y -c bioconda pbsv
 RUN apt install tabix
-
+run pip install numpy==1.22
 RUN cd /tools && \
 	git clone https://github.com/SFGLab/ConsensusSV-ONT-pipeline.git
 
