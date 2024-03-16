@@ -112,9 +112,6 @@ RUN cd /tools && \
 	make && \
 	cp hs-blastn ~/bin
 
-# NANOSV
-RUN pip install nanosv
-
 RUN curl -s https://get.nextflow.io | bash && \
 mv nextflow /bin
 
