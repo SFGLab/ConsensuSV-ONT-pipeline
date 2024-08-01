@@ -79,6 +79,7 @@ RUN conda create --name workspace python=3.8
 
 RUN pip install pysam 
 RUN pip install truvari
+RUN pip install --upgrade pip setuptools==57.5.0
 RUN pip install PyVCF
 RUN pip install opencv-python
 RUN pip install tensorflow
