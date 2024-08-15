@@ -181,7 +181,7 @@ process Dysgu {
 
 process Nanovar {
 	tag "Calling Nanovar"
-
+	conda "/tools/anaconda/envs/workspace"
 	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
