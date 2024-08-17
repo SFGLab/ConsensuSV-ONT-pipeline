@@ -77,35 +77,35 @@ RUN conda init bash
 
 RUN conda create --name workspace python=3.8
 
-RUN pip install pysam 
-RUN pip install truvari
-RUN pip install --upgrade pip setuptools==57.5.0
-RUN pip install PyVCF
-RUN pip install opencv-python
-RUN pip install tensorflow
+RUN conda run -n workspace pip install pysam 
+RUN conda run -n workspace pip install truvari
+RUN conda run -n workspace pip install --upgrade pip setuptools==57.5.0
+RUN conda run -n workspace pip install PyVCF3
+RUN conda run -n workspace pip install opencv-python
+RUN conda run -n workspace pip install tensorflow==2.12.0
+RUN conda run -n workspace pip install tqdm
 
 # bedtools2
 RUN apt-get install bedtools
 
 # SNIFFLES
-RUN pip install sniffles
+RUN pip install sniffles==2.0.7
 
 # CUTESV
-RUN pip install cuteSV
+RUN pip install cuteSV==2.0.2
 
 # SVIM
-RUN pip install svim
+RUN pip install svim==2.0.0
 
 # DYSGU
-RUN pip install numpy dysgu
+RUN pip install numpy dysgu==1.3.16
 
-# NANOVAR and dependecies
-
-RUN pip install nanovar
+# NANOVAR
+RUN conda run -n workspace pip install nanovar==1.4.1
 
 # install makeblastdb and windowmasker
 RUN cd /tools && \
-	wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-x64-linux.tar.gz && \
+	wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-x64-linux.tar.gz && \
 	tar zxf ncbi-blast-2.3.0+-x64-linux.tar.gz && \
 	cp ncbi-blast-2.3.0+/bin/makeblastdb ~/bin && cp ncbi-blast-2.3.0+/bin/windowmasker ~/bin
 
@@ -123,9 +123,8 @@ mv nextflow /bin
 RUN conda install -y -c bioconda pbmm2
 RUN conda install -y -c bioconda pbsv
 RUN apt install tabix
-run pip install numpy==1.22
+
 RUN cd /tools && \
-	git clone https://github.com/SFGLab/ConsensusSV-ONT-pipeline.git
+        git clone https://github.com/SFGLab/ConsensusSV-ONT-pipeline.git
 
 WORKDIR /tools
-
