@@ -203,7 +203,7 @@ process Nanovar {
 
 process ConsensuSV_ONT {
 	tag "Truvari variants merging and collapsing"
-
+	conda "/tools/anaconda/envs/workspace"
 	publishDir "${params.outdir}/vcfs/${sample}"
 
 	input:
