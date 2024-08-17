@@ -8,8 +8,8 @@
 params.input = "input.csv"	
 params.outdir = "results"
 params.ref = "/tools/GRCh38_full_analysis_set_plus_decoy_hla.fa"
-params.threads = 50
-params.mem = 500
+params.threads = 30
+params.mem = 50
 
 workflow {
     	files = Channel.fromPath(params.input).splitCsv()
